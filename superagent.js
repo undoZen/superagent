@@ -750,7 +750,7 @@ Response.prototype.setHeaderProperties = function(header){
 
 Response.prototype.parseBody = function(str){
   var parse = request.parse[this.type];
-  return parse
+  return parse && str && str.length
     ? parse(str)
     : null;
 };
@@ -846,9 +846,16 @@ function Request(method, url) {
   this.header = {};
   this._header = {};
   this.on('end', function(){
-    var res = new Response(self);
-    if ('HEAD' == method) res.text = null;
-    self.callback(null, res);
+    try {
+      var res = new Response(self);
+      if ('HEAD' == method) res.text = null;
+      self.callback(null, res);
+    } catch(e) {
+      var err = new Error('Parser is unable to parse the response');
+      err.parse = true;
+      err.original = e;
+      self.callback(err);
+    }
   });
 }
 
